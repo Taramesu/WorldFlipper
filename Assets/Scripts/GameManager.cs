@@ -1,21 +1,33 @@
 using JKFrame;
+using System.Collections;
+using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
+    public static GameManager Instance { get; private set; }
+
+    private void Awake()
     {
-        Scene currentScene = SceneManager.GetActiveScene();
-        if(currentScene.name == "LoginScene")
+        if(Instance == null)
         {
-            UISystem.Show<LoginMenu>();
+            Instance = this;
         }
         else
         {
-            Debug.Log("not loginScene");
+            Destroy(gameObject);
         }
+        DontDestroyOnLoad(gameObject);
+
+        //EventSystem.AddEventListener("LoadingScene",);
+    }
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        SceneSystem.Instance.SetScene(new LoginScene());
     }
 
     // Update is called once per frame
@@ -23,7 +35,39 @@ public class GameManager : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Q))
         {
-            UISystem.Close<LoginMenu>();
+            
+        }
+
+        if (Input.GetKeyDown(KeyCode.D))
+        {
+            JKFrame.EventSystem.EventTrigger("EventTest");
+            Debug.Log("EventTest_0");
+        }
+    }
+
+    public void SwitchScene(string sceneName)
+    {
+        StartCoroutine(Delay(sceneName));
+    }
+
+    private IEnumerator Delay(string sceneName) 
+    {
+        UISystem.Show<LoadingPanel>();
+        AsyncOperation ao = SceneManager.LoadSceneAsync(sceneName);
+        ao.allowSceneActivation = false;
+        while (!ao.isDone) 
+        {
+            if (ao.progress >= 0.9f)
+            {
+                JKFrame.EventSystem.EventTrigger("UpdateLoadingSceneProgress", 1.0f);
+                ao.allowSceneActivation = true;
+            }
+            else
+            {
+                JKFrame.EventSystem.EventTrigger("UpdateLoadingSceneProgress", ao.progress);
+            }
+
+            yield return new WaitForSeconds(1.0f);
         }
     }
 }
